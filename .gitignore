@@ -1,0 +1,29 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+.env
+config.local.toml
+accounts/
+backups/
+audit/
+
+# Dados operacionais reais — nunca publicar
+Snapshots/
+snapshots/
+Deployments/
+deployments/
+Remote State/
+remote-state/
+Economy Reports/
+economy-reports/
+remote-backups/
+remote-audit.jsonl
+Account_*.json
+TraderPlusGeneralConfig.json
+snapshot-manifest.json
+deployment-manifest.json
+report-manifest.json
+audit.jsonl
