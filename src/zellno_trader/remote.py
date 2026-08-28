@@ -122,7 +122,7 @@ def create_snapshot(
         for path in sorted(partial.rglob("*.json")):
             files.append(
                 {
-                    "path": str(path.relative_to(partial)),
+                    "path": path.relative_to(partial).as_posix(),
                     "size": path.stat().st_size,
                     "sha256": _sha256(path),
                 }

@@ -125,8 +125,9 @@ def _verify_snapshot(snapshot: Path, manifest: dict[str, Any]) -> None:
         expected = entry.get("sha256")
         if not isinstance(relative, str) or not isinstance(expected, str):
             raise EconomyAuditError(f"Entrada de integridade incompleta em {snapshot.name}.")
-        declared.append(relative)
-        candidate = snapshot / relative
+        normalized = relative.replace("\\", "/")
+        declared.append(normalized)
+        candidate = snapshot.joinpath(*normalized.split("/"))
         try:
             resolved = candidate.resolve(strict=True)
         except OSError as exc:
@@ -143,7 +144,7 @@ def _verify_snapshot(snapshot: Path, manifest: dict[str, Any]) -> None:
     if len(declared) != len(set(declared)):
         raise EconomyAuditError(f"O manifesto de {snapshot.name} contém arquivos duplicados.")
     actual = sorted(
-        str(path.relative_to(snapshot))
+        path.relative_to(snapshot).as_posix()
         for path in snapshot.rglob("*.json")
         if path.name != "snapshot-manifest.json"
     )
@@ -238,7 +239,7 @@ def audit_economy(
         created = manifest["created_at_utc"]
         stopped = bool(manifest.get("server_stopped_attested", False))
         declared_hashes = {
-            entry["path"]: entry["sha256"]
+            entry["path"].replace("\\", "/"): entry["sha256"]
             for entry in manifest["files"]
         }
         for account in accounts:

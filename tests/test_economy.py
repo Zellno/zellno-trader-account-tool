@@ -68,7 +68,7 @@ class EconomyAuditTests(unittest.TestCase):
                 continue
             files.append(
                 {
-                    "path": str(path.relative_to(root)),
+                    "path": path.relative_to(root).as_posix(),
                     "size": path.stat().st_size,
                     "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                 }
@@ -83,6 +83,18 @@ class EconomyAuditTests(unittest.TestCase):
             json.dumps(manifest), encoding="utf-8"
         )
         return root
+
+    def test_windows_manifest_separators_are_portable(self) -> None:
+        snapshot = self.snapshot("100000", 100)
+        manifest_path = snapshot / "snapshot-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        for entry in manifest["files"]:
+            entry["path"] = entry["path"].replace("/", "\\")
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+        report = audit_economy(self.root)
+
+        self.assertEqual(report.valid_observation_count, 1)
 
     def test_metrics_changes_signals_and_invalid_exclusion(self) -> None:
         self.snapshot("100000", 100, licences=[])
