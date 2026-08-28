@@ -4,7 +4,9 @@ import hashlib
 import json
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 from zellno_trader.deployment import (
     DeploymentError,
@@ -180,8 +182,11 @@ class DeploymentTests(unittest.TestCase):
     def test_repeated_preparation_has_identical_proposed_content(self) -> None:
         target = validate_snapshot_target(self.snapshot, self.filename)
         plan = profile_normal(target.account)
-        first = prepare_deployment(target, plan, self.root / "deployments")
-        second = prepare_deployment(target, plan, self.root / "deployments")
+        fixed_now = datetime(2026, 8, 28, 19, 18, 5, tzinfo=timezone.utc)
+        with patch("zellno_trader.deployment.datetime") as mocked_datetime:
+            mocked_datetime.now.return_value = fixed_now
+            first = prepare_deployment(target, plan, self.root / "deployments")
+            second = prepare_deployment(target, plan, self.root / "deployments")
         self.assertNotEqual(first.path, second.path)
         self.assertEqual(first.proposed_path.read_bytes(), second.proposed_path.read_bytes())
         self.assertEqual(first.proposed_sha256, second.proposed_sha256)

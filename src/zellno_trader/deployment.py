@@ -5,6 +5,7 @@ import difflib
 import hashlib
 import json
 import shutil
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -144,9 +145,10 @@ def prepare_deployment(
         raise DeploymentError("O destino do pacote não pode ficar dentro do snapshot.")
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    nonce = uuid.uuid4().hex
     destination.mkdir(parents=True, exist_ok=True)
-    partial = destination / f".deployment-{stamp}-{plan.steamid}-partial"
-    final = destination / f"deployment-{stamp}-{plan.steamid}"
+    partial = destination / f".deployment-{stamp}-{nonce}-{plan.steamid}-partial"
+    final = destination / f"deployment-{stamp}-{nonce}-{plan.steamid}"
     partial.mkdir()
     try:
         original_dir = partial / "original"
