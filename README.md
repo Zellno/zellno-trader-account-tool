@@ -7,7 +7,17 @@ Ferramenta administrativa externa para auditar contas bancárias e licenças de 
 > TraderPlus, DayZ, Bohemia Interactive ou qualquer empresa de hospedagem.
 > Faça backups e teste o procedimento em ambiente controlado antes de operar dados reais.
 
-## Estado atual: versão 0.8.0, auditoria econômica com conciliação administrativa
+## Estado atual: versão 0.9.0, pacotes para Linux e Windows
+
+A versão 0.9.0 também é distribuída pela página de Releases em dois formatos:
+
+- `zellno-trader-account-tool_0.9.0_all.deb` para Debian, Ubuntu e Linux Mint;
+- `zellno-trader-account-tool-0.9.0-windows-x64.exe` para Windows de 64 bits.
+
+Cada Release inclui `SHA256SUMS` para conferir a integridade dos arquivos. Os binários
+são construídos automaticamente pelo GitHub Actions diretamente a partir da tag
+publicada. O executável Windows ainda não possui assinatura digital e, por isso, o
+Windows Defender ou o SmartScreen podem solicitar confirmação adicional.
 
 Esta versão:
 
@@ -86,6 +96,24 @@ Também é possível executar diretamente sem instalar:
 ```bash
 PYTHONPATH=src python -m zellno_trader --help
 ```
+
+## Instalação pelos pacotes da Release
+
+No Linux Mint, Ubuntu ou Debian, baixe o `.deb` da Release e execute:
+
+```bash
+sudo apt install ./zellno-trader-account-tool_0.9.0_all.deb
+zellno-trader --version
+```
+
+No Windows, baixe o arquivo `zellno-trader-account-tool-0.9.0-windows-x64.exe`.
+Ele é portátil e pode ser executado no PowerShell sem instalação:
+
+```powershell
+.\zellno-trader-account-tool-0.9.0-windows-x64.exe --version
+```
+
+Antes de instalar ou executar, confira o arquivo baixado usando `SHA256SUMS`.
 
 ## Uso
 

@@ -1,0 +1,136 @@
+name: Build release packages
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  linux-deb:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run tests
+        run: PYTHONPATH=src python -m unittest discover -s tests -v
+
+      - name: Validate tag and source version
+        run: |
+          VERSION="$(PYTHONPATH=src python -c 'from zellno_trader import __version__; print(__version__)')"
+          test "v$VERSION" = "$GITHUB_REF_NAME"
+
+      - name: Build Debian package
+        run: ./scripts/build_deb.sh dist
+
+      - name: Validate Debian package
+        run: |
+          dpkg-deb --info dist/*.deb
+          dpkg-deb --contents dist/*.deb
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: dist/*.deb
+          if-no-files-found: error
+
+  windows-exe:
+    runs-on: windows-2022
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PyInstaller
+        run: python -m pip install --disable-pip-version-check pyinstaller==6.15.0
+
+      - name: Run tests
+        run: $env:PYTHONPATH="src"; python -m unittest discover -s tests -v
+
+      - name: Validate tag and source version
+        shell: pwsh
+        run: |
+          $env:PYTHONPATH = "src"
+          $version = python -c "from zellno_trader import __version__; print(__version__)"
+          if ("v$version" -ne $env:GITHUB_REF_NAME) {
+            throw "Tag $env:GITHUB_REF_NAME does not match source version $version"
+          }
+
+      - name: Build Windows executable
+        run: >-
+          python -m PyInstaller
+          --noconfirm
+          --clean
+          --onefile
+          --name zellno-trader
+          --paths src
+          packaging/windows_entry.py
+
+      - name: Smoke-test executable
+        run: .\dist\zellno-trader.exe --version
+
+      - name: Rename Windows artifact
+        shell: pwsh
+        run: |
+          $env:PYTHONPATH = "src"
+          $version = python -c "from zellno_trader import __version__; print(__version__)"
+          Move-Item dist\zellno-trader.exe "dist\zellno-trader-account-tool-$version-windows-x64.exe"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: dist/*-windows-x64.exe
+          if-no-files-found: error
+
+  publish:
+    needs: [linux-deb, windows-exe]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate tag and source version
+        run: |
+          VERSION="$(PYTHONPATH=src python -c 'from zellno_trader import __version__; print(__version__)')"
+          test "v$VERSION" = "$GITHUB_REF_NAME"
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate SHA-256 manifest
+        working-directory: release-assets
+        run: sha256sum * | sort > SHA256SUMS
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            release-assets/*.deb \
+            release-assets/*.exe \
+            release-assets/SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Zellno Trader Account Tool $GITHUB_REF_NAME" \
+            --generate-notes
